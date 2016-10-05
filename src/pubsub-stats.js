@@ -2,7 +2,7 @@
 
 const R = require('ramda')
 
-const { log, PUBLISH_EVENT, RECEIVE_EVENT } = require('./config')
+const { log, PUBLISH_EVENT, RECEIVE_EVENT, SUBSCRIBE_EVENT, UNSUBSCRIBE_EVENT } = require('./config')
 const { StatsError } = require('./errors')
 
 const forEachIndexed = R.addIndex(R.forEach)
@@ -10,14 +10,32 @@ const forEachIndexed = R.addIndex(R.forEach)
  module.exports = class PubsubStats {
   constructor (log) {
     this.log = log
-    this.events = generateEventObjects(log.toString())
-    this.synopsis = generateSynopsis(this.events)
+    this.eventLog = generateEvents(log.toString())
+    this.topicLog = generateSynopsis(this.eventLog)
+    this.stats = generateStats(this.topicLog)
   }
 }
 
-function generateSynopsis (logs) {
-  const totalRecipients = R.uniq(R.pluck('source', logs))
+function generateStats (topics) {
+  let result = {}
 
+  R.mapObjIndexed((messages, topicKey) => {
+    result[topicKey] = {}
+
+    R.mapObjIndexed((msgEvent, msgKey) => {
+      if (msgKey === 'subscribers') return null
+
+      result[topicKey][msgKey] = {
+        traverseTime: msgEvent.exit ? (msgEvent.exit - msgEvent.enter) : null
+      }
+    }, messages)
+
+  }, topics)
+
+  return result
+}
+
+function generateSynopsis (logs) {
   let publications = {}
 
   forEachIndexed((log, idx) => {
@@ -28,10 +46,37 @@ function generateSynopsis (logs) {
     const timestamp = log.timestamp
 
     switch (type) {
+      case SUBSCRIBE_EVENT:
+        // NEW TOPIC IN NETWORK
+        if (R.isNil(publications[topic])) {
+          publications[topic] = {
+            subscribers: []
+          }
+        }
+
+        publications[topic].subscribers.push(source)
+        break
+
+      case UNSUBSCRIBE_EVENT:
+        // Handle empty case
+        if (R.isNil(publications[topic])) {
+          publications[topic] = {
+            subscribers: []
+          }
+        }
+
+        const idx = R.indexOf(source, publications[topic].subscribers)
+        if (idx) {
+          publications[topic].subscribers.splice(idx, 1)
+        }
+        break
+
       case PUBLISH_EVENT:
         // NEW TOPIC IN NETWORK
         if (R.isNil(publications[topic])) {
-          publications[topic] = {}
+          publications[topic] = {
+            subscribers: [source]
+          }
         }
 
         // NEW MESSAGE IN NETWORK
@@ -52,7 +97,7 @@ function generateSynopsis (logs) {
 
       case RECEIVE_EVENT:
         if (R.isNil(publications[topic]) || R.isNil(publications[topic][msg])) {
-          throw new StatsError(`You must be time traveling. Message received before being published`)
+          throw new StatsError(`Time Traveling. Message received before publication`)
         }
 
         // TODO: HANDLE DUPES BETTER
@@ -62,10 +107,13 @@ function generateSynopsis (logs) {
         // Check if all recipients have been notified
         // and if so, mark an exit time on the message
         publications[topic][msg].recipients.push(source)
-        // Ensure unique recipients
-        let msgRecipients = publications[topic][msg].recipients = R.uniq(publications[topic][msg].recipients)
 
-        if (R.length(R.difference(totalRecipients, msgRecipients)) === 0) {
+        // Ensure unique recipients
+        const curRecipients = publications[topic][msg].recipients = R.uniq(publications[topic][msg].recipients)
+        const curSubscribers = publications[topic].subscribers
+
+        // Check if the message had propagated to all current subscribers in the network
+        if (R.length(R.difference(curSubscribers, curRecipients)) === 0) {
           if (R.isNil(publications[topic][msg].exit)) {
             publications[topic][msg].exit = timestamp
           }
@@ -77,7 +125,7 @@ function generateSynopsis (logs) {
   return publications
 }
 
-function generateEventObjects (logString) {
+function generateEvents (logString) {
   const allEventStrs = logString.split('\n')
 
   const potentialLogObjects = R.map((eventStr) => {
