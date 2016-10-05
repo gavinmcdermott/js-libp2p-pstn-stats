@@ -16,13 +16,12 @@ const sampleLog = fs.readFileSync(testLogPath)
 
 
 describe('PubsubStats:', () => {
-  const topic = '__topic__one'
-  const msg = '__message_11111'
-
   let eventLog
   let stats
 
   describe('Sample events:', () => {
+    const topic = '__topic__one'
+    const msg = '__message_11111'
 
     before(() => {
       stats = new PubsubStats(sampleLog)

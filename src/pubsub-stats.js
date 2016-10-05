@@ -55,6 +55,7 @@ function generateSynopsis (logs) {
         }
 
         publications[topic].subscribers.push(source)
+        publications[topic].subscribers = R.uniq(publications[topic].subscribers)
         break
 
       case UNSUBSCRIBE_EVENT:
