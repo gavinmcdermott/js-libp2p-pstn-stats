@@ -4,7 +4,8 @@
   "description": "Stats for benchmarking libp2p pubsub implementations",
   "main": "src/index.js",
   "scripts": {
-    "test": "mocha -t 60000 test/**/*.spec.js"
+    "test": "mocha -t 60000 test/**/*.spec.js",
+    "test:debug": "DEBUG=pstn:stats* mocha -t 60000 test/**/*.spec.js"
   },
   "repository": {
     "type": "git",

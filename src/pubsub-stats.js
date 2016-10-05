@@ -38,12 +38,12 @@ function generateStats (topics) {
 function generateSynopsis (logs) {
   let publications = {}
 
-  forEachIndexed((log, idx) => {
-    const msg = log.msg
-    const type = log.type
-    const topic = log.topic
-    const source = log.source
-    const timestamp = log.timestamp
+  forEachIndexed((logEvt, idx) => {
+    const msg = logEvt.msg
+    const type = logEvt.type
+    const topic = logEvt.topic
+    const source = logEvt.source
+    const timestamp = logEvt.timestamp
 
     switch (type) {
       case SUBSCRIBE_EVENT:
@@ -56,6 +56,8 @@ function generateSynopsis (logs) {
 
         publications[topic].subscribers.push(source)
         publications[topic].subscribers = R.uniq(publications[topic].subscribers)
+
+        log(SUBSCRIBE_EVENT, topic, msg)
         break
 
       case UNSUBSCRIBE_EVENT:
@@ -67,9 +69,11 @@ function generateSynopsis (logs) {
         }
 
         const idx = R.indexOf(source, publications[topic].subscribers)
-        if (idx) {
+        if (!R.isNil(idx)) {
           publications[topic].subscribers.splice(idx, 1)
         }
+
+        log(UNSUBSCRIBE_EVENT, topic, msg)
         break
 
       case PUBLISH_EVENT:
@@ -94,6 +98,8 @@ function generateSynopsis (logs) {
         // TODO: HANDLE DUPES BETTER
         // Add the publication event
         publications[topic][msg].publications.push({ source, timestamp })
+
+        log(PUBLISH_EVENT, topic, msg)
         break
 
       case RECEIVE_EVENT:
@@ -119,6 +125,8 @@ function generateSynopsis (logs) {
             publications[topic][msg].exit = timestamp
           }
         }
+
+        log(RECEIVE_EVENT, topic, msg)
         break
     }
   }, logs)
