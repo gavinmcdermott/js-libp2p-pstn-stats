@@ -1,6 +1,6 @@
 {
   "name": "libp2p-pstn-stats",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Stats for benchmarking libp2p pubsub implementations",
   "main": "src/index.js",
   "scripts": {
@@ -27,9 +27,7 @@
   },
   "homepage": "https://github.com/gavinmcdermott/js-libp2p-pstn-stats#readme",
   "devDependencies": {
-    "chai": "3.5.0",
-    "libp2p-floodsub": "0.3.0",
-    "libp2p-pstn-logger": "1.0.3"
+    "chai": "3.5.0"
   },
   "dependencies": {
     "debug": "2.2.0",
