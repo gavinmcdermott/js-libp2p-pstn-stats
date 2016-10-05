@@ -57,7 +57,7 @@ function generateSynopsis (logs) {
         publications[topic].subscribers.push(source)
         publications[topic].subscribers = R.uniq(publications[topic].subscribers)
 
-        log(SUBSCRIBE_EVENT, topic, msg)
+        log(SUBSCRIBE_EVENT, source, topic, msg)
         break
 
       case UNSUBSCRIBE_EVENT:
@@ -73,7 +73,7 @@ function generateSynopsis (logs) {
           publications[topic].subscribers.splice(idx, 1)
         }
 
-        log(UNSUBSCRIBE_EVENT, topic, msg)
+        log(UNSUBSCRIBE_EVENT, source, topic, msg)
         break
 
       case PUBLISH_EVENT:
@@ -99,7 +99,7 @@ function generateSynopsis (logs) {
         // Add the publication event
         publications[topic][msg].publications.push({ source, timestamp })
 
-        log(PUBLISH_EVENT, topic, msg)
+        log(PUBLISH_EVENT, source, topic, msg)
         break
 
       case RECEIVE_EVENT:
@@ -126,7 +126,7 @@ function generateSynopsis (logs) {
           }
         }
 
-        log(RECEIVE_EVENT, topic, msg)
+        log(RECEIVE_EVENT, source, topic, msg)
         break
     }
   }, logs)
